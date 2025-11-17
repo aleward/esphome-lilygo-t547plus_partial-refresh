@@ -76,7 +76,7 @@ wifi:
 captive_portal:
 
 external_components:
-  - source: github://dabalroman/esphome-lilygo-t547plus_esphome-2025.11
+  - source: github://hbast/esphome-lilygo-t547plus_esphome-2025.11
     components: ["t547"]
 
 
