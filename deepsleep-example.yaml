@@ -333,8 +333,8 @@ interval:
     then:
       - if:
           condition:
-            # Only run once after boot
-            lambda: 'return id(boot_counter) > 0 && id(uptime_seconds).state < 5;'
+            # Only run once after boot (when uptime is less than 5 seconds)
+            lambda: 'return id(uptime_seconds).state < 5;'
           then:
             - script.execute: update_and_sleep
   
@@ -349,8 +349,4 @@ interval:
             - logger.log:
                 format: "⚠️ WARNING: Device still awake after %.0f seconds - DeepSleep may have FAILED!"
                 args: ['id(uptime_seconds).state']
-                level: ERROR
-            - logger.log:
-                format: "Deep sleep state: %s"
-                args: ['id(deep_sleep_control).is_sleeping() ? "SLEEPING" : "AWAKE"']
                 level: ERROR
