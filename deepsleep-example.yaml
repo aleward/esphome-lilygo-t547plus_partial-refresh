@@ -153,21 +153,8 @@ text_sensor:
 # ═══════════════════════════════════════════════════════════
 # BINARY SENSORS
 # ═══════════════════════════════════════════════════════════
-binary_sensor:
-  # Button to manually prevent deep sleep
-  - platform: gpio
-    pin:
-      number: GPIO21
-      inverted: true
-    name: "Button 1"
-    id: button_1
-    on_press:
-      then:
-        - logger.log: "Button pressed - preventing sleep for 30s"
-        - deep_sleep.prevent: deep_sleep_control
-        - delay: 30s
-        - deep_sleep.allow: deep_sleep_control
-        - logger.log: "Sleep allowed again"
+# Note: GPIO21 is used as wakeup_pin in deep_sleep configuration
+# No separate binary_sensor needed - button press will wake device
 
 # ═══════════════════════════════════════════════════════════
 # TIME (for display)
