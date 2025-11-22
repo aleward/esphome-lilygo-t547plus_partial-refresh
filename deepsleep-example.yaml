@@ -89,14 +89,6 @@ deep_sleep:
   # Wakeup on button press (GPIO21)
   wakeup_pin: GPIO21
   wakeup_pin_mode: INVERT_WAKEUP
-  
-  # Optional: Run specific actions before sleep
-  on_sleep:
-    then:
-      - logger.log: "Going to sleep now..."
-      - logger.log:
-          format: "Next wake in 5 minutes or by button press"
-          level: INFO
 
 # ═══════════════════════════════════════════════════════════
 # GLOBAL VARIABLES (persisted across deep sleep)
@@ -328,10 +320,13 @@ script:
       # Wait for display to finish rendering
       - delay: 3s
       
-      # Try to enter deep sleep
+      # Log before entering deep sleep
+      - logger.log: "Going to sleep now..."
       - logger.log:
-          format: "Entering deep sleep mode for 5 minutes..."
+          format: "Next wake in 5 minutes or by button press"
           level: INFO
+      
+      # Enter deep sleep
       - deep_sleep.enter: deep_sleep_control
       
       # If we reach here, deep sleep FAILED!
