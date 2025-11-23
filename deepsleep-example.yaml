@@ -1,3 +1,25 @@
+# ═══════════════════════════════════════════════════════════
+# DeepSleep Demo for LilyGo T5 4.7" Plus E-Paper Display
+# ═══════════════════════════════════════════════════════════
+# 
+# This program demonstrates the DeepSleep functionality:
+#
+# 1. Device boots and connects to WiFi
+# 2. Synchronizes time with Home Assistant
+# 3. Updates the E-Paper display with:
+#    - Current time
+#    - Boot counter (persisted across DeepSleep cycles)
+#    - WiFi signal strength
+#    - IP address
+# 4. Enters DeepSleep after ~12 seconds (sleeps for 5 minutes)
+# 5. Wakes up automatically after 5 minutes OR
+#    by pressing the button on GPIO21
+#
+# Power consumption in DeepSleep: ~40-50µA (typical)
+# Awake time: ~10-15 seconds per cycle
+#
+# ═══════════════════════════════════════════════════════════
+
 esphome:
   name: epaper-test
   friendly_name: epaper-test
