@@ -298,9 +298,10 @@ display:
       it.printf(480, 420, id(font_small), TextAlign::TOP_CENTER,
                 "Press button to wake early");
       
-      // Footer
+      // Footer - use direct millis() for accurate uptime
+      float uptime = millis() / 1000.0;
       it.printf(480, 500, id(font_small), TextAlign::BOTTOM_CENTER,
-                "Uptime: %.0fs", id(uptime_seconds).state);
+                "Uptime: %.1fs", uptime);
       
       ESP_LOGI("display", "Display update complete");
 
