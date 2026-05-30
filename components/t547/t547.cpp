@@ -133,7 +133,7 @@ void T547::flush_zone(int input_x, int input_y, int input_w, int input_h) {
   // 4. Power on, clear just this pocket, draw, and power off immediately
   epd_poweron();
   epd_clear_area(area);
-  epd_clear_area(area); // TODO: Remove?
+  // epd_clear_area(area); // TODO: Remove?
   epd_draw_image(area, temp_buffer, BLACK_ON_WHITE);
   epd_poweroff();
 
