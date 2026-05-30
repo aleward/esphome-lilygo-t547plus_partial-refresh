@@ -98,11 +98,13 @@ void T547::flush_zone(int input_x, int input_y, int input_w, int input_h) {
 
   // 1. Snap X coordinates to 4-bit byte boundaries
   int min_x = input_x & ~1;
+  int min_y = input_y & ~1; // Force vertical alignment to even row
+
   int max_x = (input_x + input_w - 1) | 1;
+  int max_y = (input_y + input_h - 1) | 1;
+
   int width = max_x - min_x + 1;
-  int height = input_h;
-  int min_y = input_y;
-  int max_y = input_y + height - 1;
+  int height = max_y - min_y + 1;
 
   // 2. Allocate the temporary extraction buffer
   size_t temp_buffer_size = (width * height) / 2;
