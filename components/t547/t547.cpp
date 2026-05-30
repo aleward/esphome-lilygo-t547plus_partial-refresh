@@ -133,23 +133,31 @@ void T547::flush_zone(int input_x, int input_y, int input_w, int input_h) {
   // 4. Power on, clear just this pocket, draw, and power off immediately
   epd_poweron();
   epd_clear_area(area);
+  epd_clear_area(area); // TODO: Remove?
   epd_draw_image(area, temp_buffer, BLACK_ON_WHITE);
   epd_poweroff();
 
   free(temp_buffer);
 }
 
+void T547::force_full_refresh() {
+  this->pending_full_refresh_ = true;
+  this->update(); // Trigger an immediate update loop
+}
+
 void T547::display() {
   uint32_t current_time = millis();
   
-  // ONLY trigger if 10 minutes have passed
-  if (this->last_full_refresh_ == 0 || (current_time - this->last_full_refresh_ >= FULL_REFRESH_INTERVAL_MS)) {
-    ESP_LOGD(TAG, "Performing FULL 10-minute heartbeat refresh");
+  // Logic: 10 mins pass OR manual request
+  if (this->pending_full_refresh_ || this->last_full_refresh_ == 0 || (current_time - this->last_full_refresh_ >= FULL_REFRESH_INTERVAL_MS)) {
+    ESP_LOGD(TAG, "Performing FORCED/SCHEDULED FULL refresh");
     epd_poweron();
     epd_clear();
     epd_draw_grayscale_image(epd_full_screen(), this->buffer_);
     epd_poweroff();
+    
     this->last_full_refresh_ = current_time;
+    this->pending_full_refresh_ = false; // Reset the button
   }
 }
 

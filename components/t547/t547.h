@@ -31,6 +31,7 @@ class T547 : public PollingComponent, public display::DisplayBuffer {
   void update() override;
 
   void flush_zone(int x, int y, int w, int h);
+  void force_full_refresh();
 
   void setup() override;
 
@@ -63,6 +64,7 @@ class T547 : public PollingComponent, public display::DisplayBuffer {
   bool greyscale_;
   
   // 10 minutes = 600,000 milliseconds
+  bool pending_full_refresh_{false};
   uint32_t last_full_refresh_{0}; 
   const uint32_t FULL_REFRESH_INTERVAL_MS{600000};
 
