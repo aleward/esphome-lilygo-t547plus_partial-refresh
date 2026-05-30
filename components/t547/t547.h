@@ -30,6 +30,8 @@ class T547 : public PollingComponent, public display::DisplayBuffer {
   void clean();
   void update() override;
 
+  void flush_zone(int x, int y, int w, int h);
+
   void setup() override;
 
   uint8_t get_panel_state() { return this->panel_on_; }
@@ -59,12 +61,6 @@ class T547 : public PollingComponent, public display::DisplayBuffer {
   uint8_t temperature_;
 
   bool greyscale_;
-
-  bool has_dirty_rect_{false};
-  int dirty_min_x_{9999};
-  int dirty_min_y_{9999};
-  int dirty_max_x_{-1};
-  int dirty_max_y_{-1};
   
   // 10 minutes = 600,000 milliseconds
   uint32_t last_full_refresh_{0}; 

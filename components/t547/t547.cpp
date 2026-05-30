@@ -70,13 +70,6 @@ void HOT T547::draw_absolute_pixel_internal(int x, int y, Color color) {
     return;
   uint8_t gs = 255 - ((color.red * 2126 / 10000) + (color.green * 7152 / 10000) + (color.blue * 722 / 10000));
   epd_draw_pixel(x, y, gs, this->buffer_);
-
-  // Expand the dirty bounding box
-  this->has_dirty_rect_ = true;
-  if (x < this->dirty_min_x_) this->dirty_min_x_ = x;
-  if (x > this->dirty_max_x_) this->dirty_max_x_ = x;
-  if (y < this->dirty_min_y_) this->dirty_min_y_ = y;
-  if (y > this->dirty_max_y_) this->dirty_max_y_ = y;
 }
 
 void T547::dump_config() {
@@ -100,81 +93,64 @@ void T547::eink_on_() {
   panel_on_ = 1;
 }
 
-void T547::display() {
-  ESP_LOGV(TAG, "Display called");
-  uint32_t start_time = millis();
+void T547::flush_zone(int input_x, int input_y, int input_w, int input_h) {
+  ESP_LOGD(TAG, "Flushing isolated zone: x=%d, y=%d, w=%d, h=%d", input_x, input_y, input_w, input_h);
 
-  epd_poweron();
+  // 1. Snap X coordinates to 4-bit byte boundaries
+  int min_x = input_x & ~1;
+  int max_x = (input_x + input_w - 1) | 1;
+  int width = max_x - min_x + 1;
+  int height = input_h;
+  int min_y = input_y;
+  int max_y = input_y + height - 1;
 
-  uint32_t current_time = millis();
-  bool force_full_refresh = (this->last_full_refresh_ == 0) || 
-                            (current_time - this->last_full_refresh_ >= FULL_REFRESH_INTERVAL_MS);
+  // 2. Allocate the temporary extraction buffer
+  size_t temp_buffer_size = (width * height) / 2;
+  uint8_t *temp_buffer = (uint8_t *)heap_caps_malloc(temp_buffer_size, MALLOC_CAP_SPIRAM);
 
-  // Trigger full refresh if 10 mins have passed, OR if nothing specific changed in YAML
-  if (force_full_refresh || !this->has_dirty_rect_) {
-    ESP_LOGD(TAG, "Performing FULL display refresh");
-    epd_clear();
-    epd_draw_grayscale_image(epd_full_screen(), this->buffer_);
-    this->last_full_refresh_ = current_time;
-    
-    ESP_LOGV(TAG, "Display finished (full) (%ums)", millis() - start_time);
-  } else {
-    ESP_LOGD(TAG, "Performing PARTIAL refresh. Area: (%d, %d) to (%d, %d)", 
-             this->dirty_min_x_, this->dirty_min_y_, this->dirty_max_x_, this->dirty_max_y_);
-
-    // 1. Snap X coordinates to even numbers (4-bit boundary alignment). 
-    // Because this is a 4-bit grayscale display, 1 byte = 2 pixels.
-    // Snapping to even boundaries ensures we can cleanly copy whole bytes.
-    int min_x = this->dirty_min_x_ & ~1; 
-    int max_x = this->dirty_max_x_ | 1;  
-    
-    int width = max_x - min_x + 1;
-    int height = this->dirty_max_y_ - this->dirty_min_y_ + 1;
-
-    // 2. Allocate the temporary extraction buffer in PSRAM
-    size_t temp_buffer_size = (width * height) / 2;
-    uint8_t *temp_buffer = (uint8_t *)heap_caps_malloc(temp_buffer_size, MALLOC_CAP_SPIRAM);
-
-    if (temp_buffer == nullptr) {
-      ESP_LOGE(TAG, "Memory allocation failed for partial refresh!");
-      epd_poweroff();
-      return;
-    }
-
-    // 3. Blit (extract) the packed pixels from the main buffer
-    int dest_idx = 0;
-    int full_width = this->get_width_internal();
-    for (int y = this->dirty_min_y_; y <= this->dirty_max_y_; y++) {
-      for (int x = min_x; x <= max_x; x += 2) {
-        int src_idx = (y * full_width + x) / 2;
-        temp_buffer[dest_idx++] = this->buffer_[src_idx];
-      }
-    }
-
-    // 4. Define the physical rectangle, clear it, and draw the cropped buffer
-    Rect_t area = {
-        .x = min_x,
-        .y = this->dirty_min_y_,
-        .width = width,
-        .height = height
-    };
-
-    epd_clear_area(area);
-    epd_draw_image(area, temp_buffer, BLACK_ON_WHITE); 
-
-    free(temp_buffer);
-    
-    ESP_LOGV(TAG, "Display finished (partial) (%ums)", millis() - start_time);
+  if (temp_buffer == nullptr) {
+    ESP_LOGE(TAG, "Memory allocation failed for flush_zone!");
+    return;
   }
 
+  // 3. Extract exactly what we need from the main framebuffer
+  int dest_idx = 0;
+  int full_width = this->get_width_internal();
+  for (int y = min_y; y <= max_y; y++) {
+    for (int x = min_x; x <= max_x; x += 2) {
+      int src_idx = (y * full_width + x) / 2;
+      temp_buffer[dest_idx++] = this->buffer_[src_idx];
+    }
+  }
+
+  Rect_t area = {
+      .x = min_x,
+      .y = min_y,
+      .width = width,
+      .height = height
+  };
+
+  // 4. Power on, clear just this pocket, draw, and power off immediately
+  epd_poweron();
+  epd_clear_area(area);
+  epd_draw_image(area, temp_buffer, BLACK_ON_WHITE);
   epd_poweroff();
 
-  // Reset the dirty tracker for the next loop
-  this->has_dirty_rect_ = false;
-  this->dirty_min_x_ = 9999;
-  this->dirty_min_y_ = 9999;
-  this->dirty_max_x_ = -1;
-  this->dirty_max_y_ = -1;
+  free(temp_buffer);
+}
+
+void T547::display() {
+  uint32_t current_time = millis();
+  
+  // ONLY trigger if 10 minutes have passed
+  if (this->last_full_refresh_ == 0 || (current_time - this->last_full_refresh_ >= FULL_REFRESH_INTERVAL_MS)) {
+    ESP_LOGD(TAG, "Performing FULL 10-minute heartbeat refresh");
+    epd_poweron();
+    epd_clear();
+    epd_draw_grayscale_image(epd_full_screen(), this->buffer_);
+    epd_poweroff();
+    this->last_full_refresh_ = current_time;
+  }
 }
 
 }  // namespace T547
