@@ -1,3 +1,10 @@
+I'm experimenting with adding partial refresh handling to HBast's LilyGo display driver. Partly inspired by [zk4rz1's](https://github.com/zk4rz1/esphome-lilygo-t547plus-partial-refresh) fork of the [nickolay repo](https://github.com/nickolay/esphome-lilygo-t547plus).
+
+
+**HBast's README:**
+
+----
+
 This repository contains a Display component for [ESPHome](https://esphome.io/) 2025.11+ 
 to support the ESP32-S3 [LILYGO T5 4.7" Plus E-paper display](https://www.lilygo.cc/products/t5-4-7-inch-e-paper-v2-3).
 For more info on the display components, see the [ESPHome display documentation](https://esphome.io/#display-components)
