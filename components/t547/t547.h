@@ -60,6 +60,16 @@ class T547 : public PollingComponent, public display::DisplayBuffer {
 
   bool greyscale_;
 
+  bool has_dirty_rect_{false};
+  int dirty_min_x_{9999};
+  int dirty_min_y_{9999};
+  int dirty_max_x_{-1};
+  int dirty_max_y_{-1};
+  
+  // 10 minutes = 600,000 milliseconds
+  uint32_t last_full_refresh_{0}; 
+  const uint32_t FULL_REFRESH_INTERVAL_MS{600000};
+
 };
 
 }  // namespace T547
